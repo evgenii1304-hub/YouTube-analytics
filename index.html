@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Network Analytics</title>
+    <!-- Подключаем шрифт для красоты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Подключаем библиотеку Chart.js для графиков -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f3f4f6;
+            --sidebar-bg: #1f2937;
+            --sidebar-text: #f9fafb;
+            --card-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --accent: #3b82f6;
+            --accent-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Боковое меню */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            padding: 0 20px 20px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: #374151;
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Основной контент */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+        }
+
+        /* Сетка карточек */
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        /* Воронка трафика и списки */
+        .funnel-step {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .funnel-step:last-child { border-bottom: none; }
+
+        .top-videos list {
+            list-style: none;
+        }
+        .top-videos li {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-videos li:last-child { border-bottom: none; }
+        .video-title { font-weight: 500; font-size: 0.95rem; }
+        .video-stats { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* График */
+        .chart-container {
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Управление видимостью */
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Боковое меню -->
+    <div class="sidebar">
+        <h2>YT Network Analytics</h2>
+        <div class="menu-item active" onclick="switchView('network', this)">🌐 Общая сеть</div>
+        <div class="menu-item" onclick="switchView('channel1', this)">🎬 Жизненные истории</div>
+        <div class="menu-item" onclick="switchView('channel2', this)">🦖 Тайны палеонтологии</div>
+    </div>
+
+    <!-- Основная панель -->
+    <div class="main-content">
+        
+        <!-- ================= ВИД: ОБЩАЯ СЕТЬ ================= -->
+        <div id="network" class="view-section active">
+            <div class="header">
+                <h1>Общая аналитика сети (28 дней)</h1>
+            </div>
+            
+            <div class="grid-4">
+                <div class="card">
+                    <h3>Совокупные просмотры</h3>
+                    <div class="value">4,250,100</div>
+                </div>
+                <div class="card">
+                    <h3>Общее время (часы)</h3>
+                    <div class="value">310,500</div>
+                </div>
+                <div class="card">
+                    <h3>Прирост подписчиков</h3>
+                    <div class="value" style="color: #10b981;">+ 12,400</div>
+                </div>
+                <div class="card">
+                    <h3>Общий доход</h3>
+                    <div class="value" style="color: var(--accent);">$4,850.00</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Динамика просмотров всей сети</h3>
+                <div class="chart-container">
+                    <canvas id="networkChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ВИД: ДЕТАЛЬНАЯ АНАЛИТИКА (Канал 1) ================= -->
+        <div id="channel1" class="view-section">
+            <div class="header">
+                <h1>Аналитика: Жизненные истории</h1>
+            </div>
+            
+            <div class="grid-2">
+                <!-- Воронка трафика -->
+                <div class="card">
+                    <h3>Воронка трафика</h3>
+                    <div class="funnel-step">
+                        <span>Показы значков</span> <strong>5,000,000</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>CTR (Кликабельность)</span> <strong>6.5%</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Просмотры</span> <strong style="color: var(--accent);">325,000</strong>
+                    </div>
+                </div>
+
+                <!-- Удержание -->
+                <div class="card">
+                    <h3>Удержание аудитории</h3>
+                    <div class="funnel-step">
+                        <span>Средняя продолжительность</span> <strong>08:45</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Средний процент</span> <strong>42.3%</strong>
+                    </div>
+                </div>
+
+                <!-- Аудитория и Монетизация -->
+                <div class="card">
+                    <h3>Аудитория & Доход</h3>
+                    <div class="funnel-step">
+                        <span>Прирост подписчиков</span> <strong style="color: #10b981;">+3,200</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Уникальные зрители</span> <strong>150,000</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Расчетный доход</span> <strong>$1,200.00</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>RPM</span> <strong>$3.69</strong>
+                    </div>
+                </div>
+
+                <!-- Топ контент -->
+                <div class="card">
+                    <h3>Топ-3 видео за период</h3>
+                    <ul class="top-videos">
+                        <li>
+                            <div>
+                                <div class="video-title">Предательство близких: аудиодрама</div>
+                                <div class="video-stats">Доход: $450 | Удержание: 48%</div>
+                            </div>
+                            <strong>120K 👀</strong>
+                        </li>
+                        <li>
+                            <div>
+                                <div class="video-title">Случайная встреча спустя годы</div>
+                                <div class="video-stats">Доход: $310 | Удержание: 41%</div>
+                            </div>
+                            <strong>85K 👀</strong>
+                        </li>
+                        <li>
+                            <div>
+                                <div class="video-title">Непростой выбор</div>
+                                <div class="video-stats">Доход: $200 | Удержание: 39%</div>
+                            </div>
+                            <strong>50K 👀</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ВИД: ДЕТАЛЬНАЯ АНАЛИТИКА (Канал 2) ================= -->
+        <div id="channel2" class="view-section">
+            <div class="header">
+                <h1>Аналитика: Тайны палеонтологии</h1>
+            </div>
+            
+            <div class="grid-2">
+                <!-- Воронка трафика -->
+                <div class="card">
+                    <h3>Воронка трафика</h3>
+                    <div class="funnel-step">
+                        <span>Показы значков</span> <strong>3,200,000</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>CTR (Кликабельность)</span> <strong>8.1%</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Просмотры</span> <strong style="color: var(--accent);">259,200</strong>
+                    </div>
+                </div>
+
+                <!-- Удержание -->
+                <div class="card">
+                    <h3>Удержание аудитории</h3>
+                    <div class="funnel-step">
+                        <span>Средняя продолжительность</span> <strong>12:10</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Средний процент</span> <strong>55.1%</strong>
+                    </div>
+                </div>
+
+                <!-- Аудитория и Монетизация -->
+                <div class="card">
+                    <h3>Аудитория & Доход</h3>
+                    <div class="funnel-step">
+                        <span>Прирост подписчиков</span> <strong style="color: #10b981;">+5,100</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Уникальные зрители</span> <strong>110,000</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>Расчетный доход</span> <strong>$1,850.00</strong>
+                    </div>
+                    <div class="funnel-step">
+                        <span>RPM</span> <strong>$7.13</strong>
+                    </div>
+                </div>
+
+                <!-- Топ контент -->
+                <div class="card">
+                    <h3>Топ-3 видео за период</h3>
+                    <ul class="top-videos">
+                        <li>
+                            <div>
+                                <div class="video-title">Гигантские насекомые палеозоя</div>
+                                <div class="video-stats">Доход: $800 | Удержание: 58%</div>
+                            </div>
+                            <strong>95K 👀</strong>
+                        </li>
+                        <li>
+                            <div>
+                                <div class="video-title">Морские хищники мелового периода</div>
+                                <div class="video-stats">Доход: $650 | Удержание: 52%</div>
+                            </div>
+                            <strong>80K 👀</strong>
+                        </li>
+                        <li>
+                            <div>
+                                <div class="video-title">Эволюция древних пауков</div>
+                                <div class="video-stats">Доход: $300 | Удержание: 50%</div>
+                            </div>
+                            <strong>45K 👀</strong>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Скрипты для логики -->
+    <script>
+        // Функция переключения вкладок
+        function switchView(viewId, element) {
+            // Убираем класс active у всех пунктов меню
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            // Добавляем нажатому пункту
+            element.classList.add('active');
+
+            // Скрываем все экраны
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Показываем нужный экран
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // Инициализация графика Chart.js
+        const ctx = document.getElementById('networkChart').getContext('2d');
+        const networkChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['День 1', 'День 5', 'День 10', 'День 15', 'День 20', 'День 25', 'День 28'],
+                datasets: [{
+                    label: 'Просмотры (тыс.)',
+                    data: [120, 150, 140, 180, 160, 210, 230],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4 // Делает линию плавной
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
